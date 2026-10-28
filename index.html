@@ -370,11 +370,11 @@ table.rp{width:100%;border-collapse:collapse;font-size:10pt}
     <div class="hbt">STOCK HABIS</div>
     <div id="hbL"></div>
     <div class="row" style="margin-top:12px"><button class="g" id="hbCp" style="flex:1 1 0">Salin daftar</button><button class="d" id="hbClr" style="flex:1 1 0">Kosongkan</button></div>
-    <div class="hint">Barang masuk otomatis setelah Stok Keluar hari ini diisi dan sisanya (Awal + Masuk − Keluar) di bawah batas minimum, lalu keluar sendiri setelah diisi ulang. Daftar manual per hari; hari berikutnya memuat daftar terakhir.</div>
+    <div class="hint">Barang masuk otomatis bila angka Stok Keluar hari ini (dijumlah Stok Masuk bila ada) berada di bawah batas minimum, mis. gram di bawah batas = habis. Stok Awal tidak ikut dihitung. Keluar sendiri bila totalnya naik di atas batas. Daftar manual per hari; hari berikutnya memuat daftar terakhir.</div>
    </div>
    <div class="card">
     <details><summary class="hbs">Batas minimum per barang</summary>
-     <div class="hint" style="margin:8px 0 10px">Barang bersatuan gram otomatis memakai batas 200. Isi angka untuk mengubahnya, atau barang bersatuan lain (mis. Pcs) agar ikut terdeteksi. Kosongkan untuk kembali ke bawaan.</div>
+     <div class="hint" style="margin:8px 0 10px">Batas bawaan: Cup Ex Top 10, Kemasan Besar 40, Kemasan Sedang 60, barang bersatuan gram lainnya 250. Isi angka untuk mengubahnya, atau barang bersatuan lain (mis. Pcs) agar ikut terdeteksi. Kosongkan untuk kembali ke bawaan.</div>
      <div id="hbM"></div>
     </details>
    </div>
@@ -553,7 +553,8 @@ function getHabis(){var t=key(),d=S.data[t];if(d&&Array.isArray(d._habis))return
  for(var i=0;i<ds.length;i++){var e=S.data[ds[i]];if(e&&Array.isArray(e._habis))return e._habis.slice()}
  return[]}
 function setHabis(a){var t=key();S.data[t]=S.data[t]||{};S.data[t]._habis=a;auto()}
-/* batas minimum: isi manual per barang (it.min) menang; bila kosong dipakai aturan otomatis:
+/* Aturan habis: dari angka Stok Keluar + Stok Masuk (Stok Awal tidak dipakai). Bila hasilnya < batas minimum = habis.
+   batas minimum: isi manual per barang (it.min) menang; bila kosong dipakai aturan otomatis:
    Cup Ex Top < 10, Kemasan Besar < 40, Kemasan Sedang < 60, barang bersatuan gram lainnya < 250 */
 function minOf(it){var m=parseFloat(it.min);if(!isNaN(m))return m;
  var n=String(it.nama||'').toLowerCase().replace(/[^a-z0-9]+/g,' ');
@@ -564,7 +565,7 @@ function minOf(it){var m=parseFloat(it.min);if(!isNaN(m))return m;
 function autoHabis(){var d=S.data[key()]||{},x=Array.isArray(d._habisX)?d._habisX:[],out=[];
  S.items.forEach(function(it){var r=d[it.id],m=minOf(it);
   if(m==null||!r||!filled(r,'k')||x.indexOf(it.id)>=0)return;
-  var v=akhir(r);if(v<m)out.push({id:it.id,nama:it.nama,sisa:v,sat:it.sat})});
+  var v=Math.round((num(r.k)+num(r.m))*1000)/1000;if(v<m)out.push({id:it.id,nama:it.nama,sisa:v,sat:it.sat})});
  return out}
 function allHabis(){var man=getHabis().map(function(n,i){return{nama:n,i:i}}),low={};
  man.forEach(function(x){low[x.nama.toLowerCase()]=1});
@@ -574,7 +575,7 @@ function renderHabis(){var a=allHabis(),b=$('hbL');if(!b)return;
  $('hbN').textContent=a.length+' barang';
  var nv=$('nvH');if(nv)nv.textContent='Stok Habis'+(a.length?' ('+a.length+')':'');
  b.innerHTML=a.length?a.map(function(x,i){
-  var sub=x.id?'<small>Sisa '+esc(fmt(x.sisa))+' '+esc(x.sat)+' · otomatis</small>':'';
+  var sub=x.id?'<small>Total '+esc(fmt(x.sisa))+' '+esc(x.sat)+' · otomatis</small>':'';
   return'<div class="hb"><span class="no">'+(i+1)+'</span><b>'+esc(x.nama)+sub+'</b><button type="button" '+(x.id?'data-x="'+esc(x.id)+'"':'data-i="'+x.i+'"')+' aria-label="Hapus '+esc(x.nama)+'">✕</button></div>'}).join(''):'<div class="empty">Belum ada barang yang mau habis.</div>'}
 function renderMins(){var dl=$('hbDl'),m=$('hbM');if(!dl||!m)return;
  dl.innerHTML=S.items.map(function(x){return'<option value="'+esc(x.nama)+'">'}).join('');
